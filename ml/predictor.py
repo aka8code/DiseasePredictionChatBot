@@ -1,29 +1,55 @@
-# ml/predictor.py
-
-import joblib
+import joblib  # to save ML model, encoder and features list
+import os
 import numpy as np
 
-# Load everything
-model = joblib.load("data/disease_prediction_model.pkl")
-symptom_index = joblib.load("data/symptom_index.pkl")
-label_encoder = joblib.load("data/label_encoder.pkl")
+# Base directory (project root)
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DATA_DIR = os.path.join(BASE_DIR, 'data')
 
-# Ensure consistent symptom order
-all_symptoms = list(symptom_index.keys())
+df = joblib.load(os.path.join(DATA_DIR, 'processed_dataset.pkl'))[0]
+feature_list = list(df.columns)
 
-def predict_disease(symptoms: list):
-    """
-    symptoms: List of symptom strings provided by the user
-    returns: Predicted disease (string)
-    """
-    input_vector = [0] * len(all_symptoms)
+# load model, label_encoder 
+model = joblib.load(os.path.join(DATA_DIR, 'disease_prediction_model.pkl'))
+label_encoder = joblib.load(os.path.join(DATA_DIR, 'label_encoder.pkl'))
+
+# symptom synonyms mapping to handle variations in user input
+SYMPTOM_MAPPING = {
+    "cold": "chills",
+    "fever": "fever",
+    "headache": "headache",
+    "cough": "cough",
+    "runny nose": "runny_nose",
+    "sore throat": "throat_irritation",
+    "vomiting": "vomiting",
+    "nausea": "nausea",
+    "diarrhea": "diarrhoea",
+    "rash": "skin_rash",
+    "sneeze": "continuous_sneezing",
+    "smell loss": "loss_of_smell",
+}
+
+def predict_disease(symptoms: list[str]) -> str:
     
+    # map synonyms and lowercase/strip inputs
+    mapped_symptoms = set()
     for symptom in symptoms:
-        formatted = symptom.strip().lower().replace(' ', '_')
-        if formatted in symptom_index:
-            input_vector[symptom_index[formatted]] = 1
+        key = symptom.lower().strip()
+        if key in SYMPTOM_MAPPING:
+            mapped_symptoms.add(SYMPTOM_MAPPING[key])
+        elif key in feature_list:
+            mapped_symptoms.add(key)
 
-    prediction_encoded = model.predict([input_vector])[0]
-    prediction = label_encoder.inverse_transform([prediction_encoded])[0]
+    # creating input VECTOR
+    input_vector = [1 if symptom in mapped_symptoms else 0 for symptom in feature_list]
+    # eg feature_list = ["fever", "cough", "headache"]
+    # and input = ["fever", "headache"] 
+    # then input vector = [1, 0, 1]
+
+    prediction = model.predict([input_vector])[0]
+    # [0] means get the first prediction value as predict returns an array/list
+
+    disease = label_encoder.inverse_transform([prediction])[0]
+    # converts numeric label back to string label, eg. 4 to "Malaria"
     
-    return prediction
+    return disease

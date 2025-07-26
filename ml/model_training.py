@@ -91,6 +91,8 @@ def main():
     # Save the symptom index for prediction mapping
     symptom_index = {symptom: idx for idx, symptom in enumerate(X.columns)}
     joblib.dump(symptom_index, "data/symptom_index.pkl")
-    
+    feature_list = list(X.columns)
+    joblib.dump(feature_list, "data/feature_list.pkl")
+    print("DONNNNNEEEEE")
 if __name__ == "__main__":
     main()
