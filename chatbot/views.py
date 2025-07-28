@@ -1,20 +1,27 @@
 from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
+from difflib import get_close_matches
 import os
 import joblib
 import json
+
 from ml.predictor import predict_disease
+
+# Ping view to test server availability
 def ping(request):
     return JsonResponse({'message': 'pong! Django is working ✅'})
 
 
 @csrf_exempt
 def predict_disease_api(request):
+    """
+    Endpoint to receive a list of symptoms and return a predicted disease.
+    Expects a POST request with JSON body: { "symptoms": ["fever", "cough"] }
+    """
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
             symptoms = data.get('symptoms', [])
-
             if not symptoms or not isinstance(symptoms, list):
                 return JsonResponse({'error': 'symptoms should be a non-empty list'}, status=400)
 
@@ -26,51 +33,63 @@ def predict_disease_api(request):
 
     return JsonResponse({'error': 'Only POST method allowed'}, status=405)
 
+
 def get_all_symptoms():
-    # Load from the same processed dataset used for training
+    """
+    Loads and returns the list of symptom features from the preprocessed dataset.
+    """
     feature_path = os.path.join('data', 'processed_dataset.pkl')
     with open(feature_path, 'rb') as f:
         dataset = joblib.load(f)
 
-    # If dataset is a tuple like (X, y), extract the feature DataFrame
+    # If dataset is a tuple like (X, y), extract the features (X)
     if isinstance(dataset, tuple):
-        dataset = dataset[0]  # the features DataFrame (X)
+        dataset = dataset[0]
 
-    return list(dataset.columns)
+
+    return [s.lower() for s in list(dataset.columns)]
+
 
 def symptom_list_view(request):
-    symptoms = get_all_symptoms()
-    return JsonResponse({"symptoms": symptoms})
+    """
+    Returns a fuzzy-matched list of symptoms based on query string.
+    If no query, returns the full list.
+    """
+    all_symptoms = get_all_symptoms()
+    query = request.GET.get('q', '').lower()
 
-# from django.shortcuts import render
+    if query:
+        # Return top 5 closest symptom suggestions
+        suggestions = get_close_matches(query, all_symptoms, n=5, cutoff=0.3)
+        return JsonResponse({"symptoms": suggestions})
 
-# # turns func into api
-# from rest_framework.decorators import api_view
-# #returns json https responses
-# from rest_framework.response import Response
-# from rest_framework import status
-# from .models import Symptom
-# from .serializers import SymptomSerializer
+    return JsonResponse({"symptoms": all_symptoms})
 
-# from django.http import HttpResponse
-# from django.http import JsonResponse
+@csrf_exempt
+@csrf_exempt
+def fuzzy_symptom_search(request):
+    """
+    Accepts a POST request with JSON body: { "query": "fevr" }
+    Returns closest matching symptoms.
+    """
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            query = data.get('query', '').lower()
 
-# def hello(request):
-#     return HttpResponse("Helllllooooooooo")
+            feature_path = os.path.join('data', 'processed_dataset.pkl')
+            with open(feature_path, 'rb') as f:
+                dataset = joblib.load(f)
 
-# @api_view(['GET','POST'])
+            if isinstance(dataset, tuple):
+                dataset = dataset[0]
 
-# def symptom_list(request):
-#     if request.method == 'GET':
-#         symptoms = Symptom.objects.all()
-#         serializer = SymptomSerializer(symptoms, many=True)
-#         return Response(serializer.data)
-    
-#     elif request.method == 'POST':
-#         # Takes the JSON input sent by user (e.g. { "name": "fever" }) and converts it to a SymptomSerializer object for validation.
-#         serializer = SymptomSerializer(data=request.data)
-#         if serializer.is_valid():
-#             serializer.save()
-#             return Response(serializer.data, status=status.HTTP_201_CREATED)
-#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+            all_symptoms = [s.lower() for s in list(dataset.columns)]
+
+            matches = get_close_matches(query, all_symptoms, n=5, cutoff=0.3)
+            return JsonResponse({'matches': matches})
+
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'Invalid JSON'}, status=400)
+
+    return JsonResponse({'error': 'Only POST method allowed'}, status=405)
