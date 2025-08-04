@@ -1,29 +1,28 @@
-//API LOGIC
-const BASE_URL = "http://127.0.0.1:8000" //Django server
+// src/services/symptomService.ts
+import axios from "axios";
 
-export const getFuzzyMatch = async (input: string): Promise<string[]> => {
-    //send user input to fuzzy endpoint
-    const response = await fetch(`${BASE_URL}/fuzzy_symptoms/`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: input }), // use 'query' key to match backend
-    });
-    //receives an array 
-    const data = await response.json();
-    // returns string[] of suggestions
-    return data.matches || []; // updated to match backend response structure
+export const getFuzzySymptoms = async (query: string): Promise<string[]> => {
+  const response = await axios.post("http://localhost:8000/fuzzy_symptoms/", {
+    query,
+  });
+  return response.data.matches || [];
 };
 
-export const getPrediction = async (symptoms: string[]): Promise<string> => {
-    // sends array of symptoms to predict
-    console.log("Sending symptoms to /predict/:", symptoms); // debug
-    const response = await fetch(`${BASE_URL}/predict/`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ symptoms }),
-    });
-    //receives an array 
-    const data = await response.json();
-    console.log("Prediction response: ",data)
-    return data.predicted_disease;
+export interface ExtractPredictResponse {
+  extracted_symptoms: string[];
+  predicted_disease?: string;
+}
+
+export async function extractAndPredict(sentence: string): Promise<ExtractPredictResponse> {
+  const response = await fetch("http://localhost:8000/extract_and_predict/", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ sentence }),
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to extract and predict");
+  }
+
+  return response.json();
 }

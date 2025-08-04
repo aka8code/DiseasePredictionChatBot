@@ -10,4 +10,6 @@ urlpatterns = [
     path('symptoms/', views.symptom_list_view),
     path('fuzzy_symptoms/', views.fuzzy_symptom_search), 
     path('ping/', ping),
+    path('extract_and_predict/', views.extract_and_predict),
+
 ]

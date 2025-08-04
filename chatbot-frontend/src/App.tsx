@@ -1,19 +1,20 @@
 import React from "react";
-import SymptomInput from "./components/SymptomChat";
+import SymptomChat from "./components/SymptomChat";
 import { Box } from "@mui/material";
 
 function App() {
   return (
     <Box
-      minHeight="100vh"
-      bgcolor="#f9fafb" // Tailwind gray-50 equivalent
-      display="flex"
-      justifyContent="center"
-      alignItems="center"
-      px={3} // padding-left/right like p-6
-      py={4} // padding-top/bottom
+      sx={{
+        minHeight: "100vh",
+        background: "linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%)",
+        padding: "16px",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
     >
-      <SymptomInput />
+      <SymptomChat />
     </Box>
   );
 }
