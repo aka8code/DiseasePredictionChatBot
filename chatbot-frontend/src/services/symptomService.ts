@@ -1,3 +1,4 @@
+// functions to interact with the backend for symptom-related operations.
 // src/services/symptomService.ts
 import axios from "axios";
 

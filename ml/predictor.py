@@ -1,3 +1,5 @@
+# module provides a function to predict diseases based on user symptoms.
+# Here I am creating a vector from user input symptoms 
 import joblib  # to save ML model, encoder and features list
 import os
 import numpy as np

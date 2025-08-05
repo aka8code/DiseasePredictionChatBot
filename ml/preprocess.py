@@ -1,3 +1,4 @@
+#loading and exploring the dataset
 import pandas as pd
 
 def load_dataset():

@@ -1,4 +1,5 @@
 # ml/evaluate_model.py
+#evaluates the dataset and model performance, also generates a confusion matrix for the top N most frequent diseases
 import joblib
 import numpy as np
 import matplotlib.pyplot as plt
