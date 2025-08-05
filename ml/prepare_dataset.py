@@ -1,3 +1,5 @@
+# Preparing the dataset for disease prediction
+# i.e cleaning, encoding, and saving the dataset
 import pandas as pd
 import joblib
 from sklearn.preprocessing import LabelEncoder
